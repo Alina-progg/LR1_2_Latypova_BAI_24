@@ -7,7 +7,7 @@ using ЛР1_2_Латыпова_БАИ_24.ViewModel;
 
 namespace ЛР1_2_Латыпова_БАИ_24.Model
 {
-    public class Person
+    public class Person//test
     {
         public int Id { get; set; }
         public int RoleId { get; set; }
