@@ -90,7 +90,7 @@ namespace ЛР1_2_Латыпова_БАИ_24.Model
 
         public PersonDpo() { }
 
-        public PersonDpo(int id, string roleName, string firstName, string lastName, DateTime birthday)
+        public PersonDpo(int id, string roleName, string firstName, string lastName, string birthday)
         {
             this.Id = id;
             this.RoleName = roleName;

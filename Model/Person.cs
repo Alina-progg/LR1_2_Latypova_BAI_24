@@ -17,7 +17,7 @@ namespace ЛР1_2_Латыпова_БАИ_24.Model
 
         public Person() { }
 
-        public Person(int id, int roleId, string firstName, string lastName, DateTime birthday)
+        public Person(int id, int roleId, string firstName, string lastName, string birthday)
         {
             this.Id = id;
             this.RoleId = roleId;
