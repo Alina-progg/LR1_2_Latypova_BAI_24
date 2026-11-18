@@ -73,12 +73,12 @@ namespace ЛР1_2_Латыпова_БАИ_24.Model
         /// <summary>
         /// дата рождения сотрудника
         /// </summary>
-        private DateTime birthday;
+        private string birthday;
 
         /// <summary>
         /// дата рождения сотрудника
         /// </summary>
-        public DateTime Birthday
+        public string Birthday
         {
             get { return birthday; }
             set

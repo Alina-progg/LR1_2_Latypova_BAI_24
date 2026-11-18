@@ -13,7 +13,7 @@ namespace ЛР1_2_Латыпова_БАИ_24.Model
         public int RoleId { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public DateTime Birthday { get; set; }
+        public string Birthday { get; set; }
 
         public Person() { }
 
