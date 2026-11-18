@@ -106,7 +106,7 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                         {
                             per.RoleName = r.NameRole;
                             // добавлено: форматирование даты в строку
-                            per.Birthday = PersonDpo.GetStringBirthday(per.Birthday);
+                            per.Birthday = DateTime.Parse(per.Birthday).ToString("dd.MM.yyyy");
 
                             ListPersonDpo.Add(per);
 
@@ -152,7 +152,7 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                             personDpo.FirstName = tempPerson.FirstName;
                             personDpo.LastName = tempPerson.LastName;
                             // изменено: форматирование даты
-                            personDpo.Birthday = PersonDpo.GetStringBirthday(tempPerson.Birthday);
+                            personDpo.Birthday = DateTime.Parse(tempPerson.Birthday).ToString("dd.MM.yyyy");
 
                             // изменено: поиск сотрудника и обновление через метод
                             var p = ListPerson.FirstOrDefault(x => x.Id == personDpo.Id);

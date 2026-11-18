@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ЛР1_2_Латыпова_БАИ_24.View"
         mc:Ignorable="d"
-Title="Сотрудник" Height="320" Width="400"
+        Title="Сотрудник" Height="320" Width="400"
         WindowStartupLocation="CenterOwner">
     <Grid>
         <Grid.RowDefinitions>
@@ -38,8 +38,27 @@ Title="Сотрудник" Height="320" Width="400"
                  Text="{Binding FirstName}"/>
 
         <Label Grid.Row="4" Grid.Column="0" Content="Дата рождения:" Margin="10"/>
-        <DatePicker Grid.Row="4" Grid.Column="1" Margin="10"
-                    SelectedDate="{Binding Birthday}"/>
+
+        <!-- текстовое отображение даты -->
+        <TextBox x:Name="tbBirthday" Grid.Row="4" Grid.Column="1" Margin="10"
+                 Text="{Binding Birthday}" 
+                 IsVisibleChanged="tbBirthday_IsVisibleChanged">
+            <TextBox.Style>
+                <Style TargetType="TextBox">
+                    <Style.Triggers>
+                        <!-- при клике textbox исчезает, показывая календарь -->
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter Property="Visibility" Value="Hidden"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </TextBox.Style>
+        </TextBox>
+
+        <!-- Календарь (скрыт по умолчанию, появляется при клике) -->
+        <DatePicker x:Name="ClBirthday" Grid.Row="4" Grid.Column="1" Margin="10"
+                    Visibility="Hidden"
+                    SelectedDate="{Binding Birthday, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
         <StackPanel Grid.Row="5" Grid.ColumnSpan="2"
                     Orientation="Horizontal" HorizontalAlignment="Right">

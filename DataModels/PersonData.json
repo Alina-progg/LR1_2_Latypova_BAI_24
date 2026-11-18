@@ -1,4 +1,4 @@
-﻿[
+[
   {
     "Id": 1,
     "RoleId": 1,
@@ -26,5 +26,12 @@
     "FirstName": "Сидор",
     "LastName": "Сидоров",
     "Birthday": "10.05.1983"
+  },
+  {
+    "Id": 5,
+    "RoleId": 2,
+    "FirstName": "ии",
+    "LastName": "ии",
+    "Birthday": "11.01.2026"
   }
 ]

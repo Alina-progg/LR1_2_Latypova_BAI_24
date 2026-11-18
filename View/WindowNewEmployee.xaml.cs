@@ -1,16 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using ЛР1_2_Латыпова_БАИ_24.Model;
 using ЛР1_2_Латыпова_БАИ_24.ViewModel;
 
@@ -26,7 +16,7 @@ namespace ЛР1_2_Латыпова_БАИ_24.View
         {
             InitializeComponent();
 
-            // Привязываем ComboBox к ОБЩЕМУ списку должностей
+            // Привязываем ComboBox к общему списку должностей
             CbRole.ItemsSource = roleVM.ListRole;
 
             Loaded += (s, e) =>
@@ -42,6 +32,19 @@ namespace ЛР1_2_Латыпова_БАИ_24.View
                     }
                 }
             };
+        }
+
+        // Обработчик для переключения видимости TextBox и DatePicker
+        private void tbBirthday_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (tbBirthday.Visibility == Visibility.Hidden)
+            {
+                ClBirthday.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                ClBirthday.Visibility = Visibility.Hidden;
+            }
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)
