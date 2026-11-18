@@ -172,6 +172,13 @@ namespace ЛР1_2_Латыпова_БАИ_24.Model
 
         public event PropertyChangedEventHandler PropertyChanged;
 
+        public static string GetStringBirthday(string date)
+        {
+            if (DateTime.TryParse(date, out var d))
+                return d.ToString("dd.MM.yyyy");
+            return date;
+        }
+
         protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = "")
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

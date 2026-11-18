@@ -2,11 +2,11 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO; // добавлено для работы с файлами
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
+using Newtonsoft.Json; // добавлено для работы с json
 using ЛР1_2_Латыпова_БАИ_24.Helper;
 using ЛР1_2_Латыпова_БАИ_24.Model;
 using ЛР1_2_Латыпова_БАИ_24.View;
@@ -15,6 +15,14 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
 {
     public class PersonViewModel : INotifyPropertyChanged
     {
+        // добавлено: путь к json файлу
+        readonly string path = @"C:\Users\User\source\repos\ЛР1_2_Латыпова_БАИ_24\DataModels\PersonData.json";
+
+        // добавлено: поля для работы с json и ошибками
+        string _jsonPersons = String.Empty;
+        public string Error { get; set; }
+        public string Message { get; set; } // добавлено для вывода сообщений
+
         // Ссылка на RoleViewModel, чтобы передавать её в окно
         public RoleViewModel RoleVM { get; set; }
 
@@ -23,11 +31,8 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
         {
             RoleVM = roleVM;
 
-            this.ListPerson.Add(new Person { Id = 1, RoleId = 1, FirstName = "Иван", LastName = "Иванов", Birthday = new DateTime(1980, 02, 28) });
-            this.ListPerson.Add(new Person { Id = 2, RoleId = 2, FirstName = "Петр", LastName = "Петров", Birthday = new DateTime(1981, 03, 20) });
-            this.ListPerson.Add(new Person { Id = 3, RoleId = 3, FirstName = "Виктор", LastName = "Викторов", Birthday = new DateTime(1982, 04, 15) });
-            this.ListPerson.Add(new Person { Id = 4, RoleId = 3, FirstName = "Сидор", LastName = "Сидоров", Birthday = new DateTime(1983, 05, 10) });
-
+            // изменено: убрано ручное добавление данных, теперь загрузка из файла
+            ListPerson = LoadPerson();
             ListPersonDpo = GetListPersonDpo();
         }
 
@@ -48,11 +53,14 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
 
         public ObservableCollection<PersonDpo> GetListPersonDpo()
         {
-            foreach (var person in ListPerson)
+            if (ListPerson != null)
             {
-                PersonDpo p = new PersonDpo();
-                p = p.CopyFromPerson(person);
-                ListPersonDpo.Add(p);
+                foreach (var person in ListPerson)
+                {
+                    PersonDpo p = new PersonDpo();
+                    p = p.CopyFromPerson(person);
+                    ListPersonDpo.Add(p);
+                }
             }
             return ListPersonDpo;
         }
@@ -60,16 +68,18 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
         public int MaxId()
         {
             int max = 0;
-            foreach (var r in this.ListPerson)
+            if (ListPerson != null)
             {
-                if (max < r.Id) max = r.Id;
+                foreach (var r in this.ListPerson)
+                {
+                    if (max < r.Id) max = r.Id;
+                }
             }
             return max;
         }
 
         #region AddPerson
         private RelayCommand addPerson;
-
         public RelayCommand AddPerson
         {
             get
@@ -77,24 +87,36 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                 return addPerson ??
                 (addPerson = new RelayCommand(obj =>
                 {
-                    // Передаем RoleVM в конструктор окна, чтобы ComboBox заполнился
                     WindowNewEmployee wnPerson = new WindowNewEmployee(RoleVM)
                     {
                         Title = "Новый сотрудник"
                     };
                     int maxIdPerson = MaxId() + 1;
-                    PersonDpo per = new PersonDpo { Id = maxIdPerson, Birthday = DateTime.Now };
+
+                    // изменено: birthday теперь строка
+                    PersonDpo per = new PersonDpo { Id = maxIdPerson, Birthday = DateTime.Now.ToString("dd.MM.yyyy") };
+
                     wnPerson.DataContext = per;
 
                     if (wnPerson.ShowDialog() == true)
                     {
-                        Role r = (Role)wnPerson.CbRole.SelectedItem;
-                        per.RoleName = r.NameRole;
-                        ListPersonDpo.Add(per);
+                        // изменено: добавлена проверка на null для должности
+                        var r = (Role)wnPerson.CbRole.SelectedItem;
+                        if (r != null)
+                        {
+                            per.RoleName = r.NameRole;
+                            // добавлено: форматирование даты в строку
+                            per.Birthday = PersonDpo.GetStringBirthday(per.Birthday);
 
-                        Person p = new Person();
-                        p = p.CopyFromPersonDPO(per);
-                        ListPerson.Add(p);
+                            ListPersonDpo.Add(per);
+
+                            Person p = new Person();
+                            p = p.CopyFromPersonDPO(per);
+                            ListPerson.Add(p);
+
+                            // добавлено: сохранение изменений в файл
+                            SaveChanges(ListPerson);
+                        }
                     }
                 },
                 (obj) => true));
@@ -104,7 +126,6 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
 
         #region EditPerson
         private RelayCommand editPerson;
-
         public RelayCommand EditPerson
         {
             get
@@ -123,16 +144,31 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
 
                     if (wnPerson.ShowDialog() == true)
                     {
-                        Role r = (Role)wnPerson.CbRole.SelectedItem;
-                        personDpo.RoleName = r.NameRole;
-                        personDpo.FirstName = tempPerson.FirstName;
-                        personDpo.LastName = tempPerson.LastName;
-                        personDpo.Birthday = tempPerson.Birthday;
+                        // изменено: добавлена проверка на null
+                        var r = (Role)wnPerson.CbRole.SelectedItem;
+                        if (r != null)
+                        {
+                            personDpo.RoleName = r.NameRole;
+                            personDpo.FirstName = tempPerson.FirstName;
+                            personDpo.LastName = tempPerson.LastName;
+                            // изменено: форматирование даты
+                            personDpo.Birthday = PersonDpo.GetStringBirthday(tempPerson.Birthday);
 
-                        FindPerson finder = new FindPerson(personDpo.Id);
-                        List<Person> listPerson = ListPerson.ToList();
-                        Person p = listPerson.Find(new Predicate<Person>(finder.PersonPredicate));
-                        p = p.CopyFromPersonDPO(personDpo);
+                            // изменено: поиск сотрудника и обновление через метод
+                            var p = ListPerson.FirstOrDefault(x => x.Id == personDpo.Id);
+                            if (p != null)
+                            {
+                                p = p.CopyFromPersonDPO(personDpo);
+                            }
+
+                            // добавлено: сохранение изменений в файл
+                            SaveChanges(ListPerson);
+                        }
+                        else
+                        {
+                            // добавлено: сообщение если должность не выбрана
+                            Message = "Необходимо выбрать должность сотрудника.";
+                        }
                     }
                 },
                 (obj) => SelectedPersonDpo != null && ListPersonDpo.Count > 0));
@@ -155,12 +191,59 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                     if (result == MessageBoxResult.OK)
                     {
                         ListPersonDpo.Remove(person);
-                        Person per = new Person();
-                        per = per.CopyFromPersonDPO(person);
-                        ListPerson.Remove(per);
+
+                        // изменено: поиск удаляемого сотрудника через firstordefault
+                        var per = ListPerson.FirstOrDefault(p => p.Id == person.Id);
+                        if (per != null)
+                        {
+                            ListPerson.Remove(per);
+                            // добавлено: сохранение изменений в файл
+                            SaveChanges(ListPerson);
+                        }
                     }
                 },
                 (obj) => SelectedPersonDpo != null && ListPersonDpo.Count > 0));
+            }
+        }
+        #endregion
+
+        #region Methods
+        // добавлено: метод загрузки из файла
+        public ObservableCollection<Person> LoadPerson()
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    _jsonPersons = File.ReadAllText(path);
+                    if (_jsonPersons != null)
+                    {
+                        return JsonConvert.DeserializeObject<ObservableCollection<Person>>(_jsonPersons);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Error = "Ошибка чтения json файла\n" + e.Message;
+            }
+            return new ObservableCollection<Person>();
+        }
+
+        // добавлено: метод сохранения в файл
+        private void SaveChanges(ObservableCollection<Person> listPersons)
+        {
+            // добавлено: formatting.indented для красивого вывода
+            var jsonPerson = JsonConvert.SerializeObject(listPersons, Newtonsoft.Json.Formatting.Indented);
+            try
+            {
+                using (StreamWriter writer = File.CreateText(path))
+                {
+                    writer.Write(jsonPerson);
+                }
+            }
+            catch (IOException e)
+            {
+                Error = "Ошибка записи json файла\n" + e.Message;
             }
         }
         #endregion
@@ -172,4 +255,3 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
         }
     }
 }
-
