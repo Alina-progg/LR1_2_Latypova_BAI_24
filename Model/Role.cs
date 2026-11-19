@@ -23,9 +23,6 @@ namespace ЛР1_2_Латыпова_БАИ_24.Model
         /// </summary>
         private string nameRole;
 
-        /// <summary>
-        /// наименование должности
-        /// </summary>
         public string NameRole
         {
             get { return nameRole; }
@@ -36,18 +33,27 @@ namespace ЛР1_2_Латыпова_БАИ_24.Model
             }
         }
 
-        public Role() { }
+        public Role()
+        {
+            // создаем коллекцию сотрудников
+            Persons = new HashSet<Person>();
+        }
 
         public Role(int id, string nameRole)
         {
-            this.Id = id;
-            this.NameRole = nameRole;
+            Id = id;
+            NameRole = nameRole;
+            Persons = new HashSet<Person>();
         }
 
         /// <summary>
-        /// Метод поверхностного копирования
+        /// коллекция сотрудников с этой должностью
         /// </summary>
-        /// <returns></returns>
+        public virtual ICollection<Person> Persons { get; set; }
+
+        /// <summary>
+        /// поверхностное копирование объекта
+        /// </summary>
         public Role ShallowCopy()
         {
             return (Role)this.MemberwiseClone();

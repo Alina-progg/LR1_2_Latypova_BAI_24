@@ -7,49 +7,39 @@ using ЛР1_2_Латыпова_БАИ_24.ViewModel;
 
 namespace ЛР1_2_Латыпова_БАИ_24.Model
 {
-    public class Person//test
+    /// <summary>
+    /// класс сотрудник
+    /// </summary>
+    public class Person
     {
+        /// <summary>
+        /// код сотрудника
+        /// </summary>
         public int Id { get; set; }
-        public int RoleId { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Birthday { get; set; }
-
-        public Person() { }
-
-        public Person(int id, int roleId, string firstName, string lastName, string birthday)
-        {
-            this.Id = id;
-            this.RoleId = roleId;
-            this.FirstName = firstName;
-            this.LastName = lastName;
-            this.Birthday = birthday;
-        }
 
         /// <summary>
-        /// копирование данных из класса PersonDpo
+        /// код должности сотрудника
         /// </summary>
-        /// <param name="personDpo"></param>
-        /// <returns></returns>
-        public Person CopyFromPersonDPO(PersonDpo personDpo) // Имя метода с большими DPO, как ждет PersonViewModel
-        {
-            Person person = new Person();
-            RoleViewModel vmRole = new RoleViewModel();
-            int roleId = 0;
-            foreach (var r in vmRole.ListRole)
-            {
-                if (r.NameRole == personDpo.RoleName)
-                {
-                    roleId = r.Id;
-                    break;
-                }
-            }
-            person.Id = personDpo.Id;
-            person.RoleId = roleId;
-            person.FirstName = personDpo.FirstName;
-            person.LastName = personDpo.LastName;
-            person.Birthday = personDpo.Birthday;
-            return person;
-        }
+        public int RoleId { get; set; }
+
+        /// <summary>
+        /// имя сотрудника
+        /// </summary>
+        public string FirstName { get; set; }
+
+        /// <summary>
+        /// фамилия сотрудника
+        /// </summary>
+        public string LastName { get; set; }
+
+        /// <summary>
+        /// дата рождения сотрудника
+        /// </summary>
+        public DateTime Birthday { get; set; }
+
+        /// <summary>
+        /// должность сотрудника
+        /// </summary>
+        public virtual Role Role { get; set; }
     }
 }
