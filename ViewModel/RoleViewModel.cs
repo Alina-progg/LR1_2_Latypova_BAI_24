@@ -1,11 +1,10 @@
-﻿using Newtonsoft.Json; // добавлено для работы с json
+﻿
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO; // добавлено для работы с файлами
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using System.Xml;
 using ЛР1_2_Латыпова_БАИ_24.Helper;
 using ЛР1_2_Латыпова_БАИ_24.Model;
 using ЛР1_2_Латыпова_БАИ_24.View;
@@ -14,16 +13,12 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
 {
     public class RoleViewModel : INotifyPropertyChanged
     {
-        // путь к файлу данных
-        readonly string path = @"C:\Users\User\source\repos\ЛР1_2_Латыпова_БАИ_24\DataModels\RoleData.json";
-
-        // поле для хранения json строки
-        string _jsonRoles = String.Empty;
         // поле для хранения текста ошибки
         public string Error { get; set; }
 
         private Role selectedRole;
 
+        // выбранная должность
         public Role SelectedRole
         {
             get { return selectedRole; }
@@ -35,28 +30,35 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
             }
         }
 
-        public ObservableCollection<Role> ListRole { get; set; } = new ObservableCollection<Role>();
+        // список должностей
+        public ObservableCollection<Role> ListRole { get; set; }
+            = new ObservableCollection<Role>();
 
+        // загрузка должностей из базы данных
         public RoleViewModel()
         {
-            ListRole = LoadRole(); // загрузка данных из файла вместо ручного заполнения
+            ListRole = LoadRole();
         }
 
+        // получение максимального идентификатора
         public int MaxId()
         {
             int max = 0;
-            foreach (var r in this.ListRole)
+
+            foreach (var r in ListRole)
             {
                 if (max < r.Id)
                 {
                     max = r.Id;
                 }
             }
+
             return max;
         }
 
         private RelayCommand addRole;
 
+        // добавление должности
         public RelayCommand AddRole
         {
             get
@@ -68,21 +70,30 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                     {
                         Title = "Новая должность",
                     };
+
                     int maxIdRole = MaxId() + 1;
                     Role role = new Role { Id = maxIdRole };
+
                     wnRole.DataContext = role;
+
                     if (wnRole.ShowDialog() == true)
                     {
+                        using (CompanyEntities db = new CompanyEntities())
+                        {
+                            db.Roles.Add(role);
+                            db.SaveChanges();
+                        }
+
                         ListRole.Add(role);
-                        SaveChanges(ListRole); // сохранение изменений в файл
+                        SelectedRole = role;
                     }
-                    SelectedRole = role;
                 }));
             }
         }
 
         private RelayCommand editRole;
 
+        // редактирование должности
         public RelayCommand EditRole
         {
             get
@@ -94,14 +105,26 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                     {
                         Title = "Редактирование должности",
                     };
+
                     Role role = SelectedRole;
-                    Role tempRole = new Role();
-                    tempRole = role.ShallowCopy();
+                    Role tempRole = role.ShallowCopy();
+
                     wnRole.DataContext = tempRole;
+
                     if (wnRole.ShowDialog() == true)
                     {
+                        using (CompanyEntities db = new CompanyEntities())
+                        {
+                            Role roleInDb = db.Roles.Find(role.Id);
+
+                            if (roleInDb != null)
+                            {
+                                roleInDb.NameRole = tempRole.NameRole;
+                                db.SaveChanges();
+                            }
+                        }
+
                         role.NameRole = tempRole.NameRole;
-                        SaveChanges(ListRole); // сохранение изменений в файл
                     }
                 },
                 (obj) => SelectedRole != null && ListRole.Count > 0));
@@ -110,6 +133,7 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
 
         private RelayCommand deleteRole;
 
+        // удаление должности
         public RelayCommand DeleteRole
         {
             get
@@ -118,13 +142,27 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                 (deleteRole = new RelayCommand(obj =>
                 {
                     Role role = SelectedRole;
-                    MessageBoxResult result = MessageBox.Show("Удалить данные по должности: " +
-                        role.NameRole, "Предупреждение", MessageBoxButton.OKCancel,
+
+                    MessageBoxResult result = MessageBox.Show(
+                        "Удалить данные по должности: " + role.NameRole,
+                        "Предупреждение",
+                        MessageBoxButton.OKCancel,
                         MessageBoxImage.Warning);
+
                     if (result == MessageBoxResult.OK)
                     {
+                        using (CompanyEntities db = new CompanyEntities())
+                        {
+                            Role roleInDb = db.Roles.Find(role.Id);
+
+                            if (roleInDb != null)
+                            {
+                                db.Roles.Remove(roleInDb);
+                                db.SaveChanges();
+                            }
+                        }
+
                         ListRole.Remove(role);
-                        SaveChanges(ListRole); // сохранение изменений в файл
                     }
                 },
                 (obj) => SelectedRole != null && ListRole.Count > 0));
@@ -132,44 +170,27 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
         }
 
         #region Methods
-        // метод загрузки данных из json файла
+
+        // загрузка должностей из базы данных
         public ObservableCollection<Role> LoadRole()
         {
-            _jsonRoles = File.ReadAllText(path);
-            if (_jsonRoles != null)
+            using (CompanyEntities db = new CompanyEntities())
             {
-                ListRole = JsonConvert.DeserializeObject<ObservableCollection<Role>>(_jsonRoles);
-                return ListRole;
-            }
-            else
-            {
-                return null;
+                return new ObservableCollection<Role>(
+                    db.Roles.ToList());
             }
         }
 
-        // метод сохранения данных в json файл
-        private void SaveChanges(ObservableCollection<Role> listRole)
-        {
-            var jsonRole = JsonConvert.SerializeObject(listRole, Newtonsoft.Json.Formatting.Indented);
-            try
-            {
-                using (StreamWriter writer = File.CreateText(path))
-                {
-                    writer.Write(jsonRole);
-                }
-            }
-            catch (IOException e)
-            {
-                Error = "Ошибка записи json файла /n" + e.Message;
-            }
-        }
         #endregion
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = "")
+        protected virtual void OnPropertyChanged(
+            [CallerMemberName] string propertyName = "")
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(
+                this,
+                new PropertyChangedEventArgs(propertyName));
         }
     }
 }

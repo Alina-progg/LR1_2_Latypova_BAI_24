@@ -15,8 +15,9 @@
             <Button Content="Удалить" Height="25" Margin="10,10,5,10"
                     Command="{Binding DeletePerson}"/>
         </StackPanel>
-        <ListView ItemsSource="{Binding ListPersonDpo}"
-                  SelectedItem="{Binding SelectedPersonDpo}">
+
+        <ListView ItemsSource="{Binding ListPerson}"
+                  SelectedItem="{Binding SelectedPerson}">
             <ListView.View>
                 <GridView>
                     <GridView.Columns>
@@ -27,7 +28,7 @@
                         <GridViewColumn Header="Имя"
                                         DisplayMemberBinding="{Binding FirstName}"/>
                         <GridViewColumn Header="Должность" Width="100"
-                                        DisplayMemberBinding="{Binding RoleName}"/>
+                                        DisplayMemberBinding="{Binding Role.NameRole}"/>
                         <GridViewColumn Header="Дата рождения"
                                         DisplayMemberBinding="{Binding Birthday, StringFormat='dd.MM.yyyy'}"/>
                     </GridView.Columns>

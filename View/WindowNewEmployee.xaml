@@ -16,6 +16,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
@@ -27,41 +28,25 @@
 
         <Label Grid.Row="1" Grid.Column="0" Content="Должность:" Margin="10"/>
         <ComboBox x:Name="CbRole" Grid.Row="1" Grid.Column="1" Margin="10"
-                  DisplayMemberPath="NameRole"/>
+                  DisplayMemberPath="NameRole"
+                  SelectedValuePath="Id"
+                  SelectedValue="{Binding RoleId, Mode=TwoWay}"/>
 
         <Label Grid.Row="2" Grid.Column="0" Content="Фамилия:" Margin="10"/>
         <TextBox Grid.Row="2" Grid.Column="1" Margin="10"
-                 Text="{Binding LastName}"/>
+                 Text="{Binding LastName, UpdateSourceTrigger=PropertyChanged}"/>
 
         <Label Grid.Row="3" Grid.Column="0" Content="Имя:" Margin="10"/>
         <TextBox Grid.Row="3" Grid.Column="1" Margin="10"
-                 Text="{Binding FirstName}"/>
+                 Text="{Binding FirstName, UpdateSourceTrigger=PropertyChanged}"/>
 
         <Label Grid.Row="4" Grid.Column="0" Content="Дата рождения:" Margin="10"/>
-
-        <!-- текстовое отображение даты -->
-        <TextBox x:Name="tbBirthday" Grid.Row="4" Grid.Column="1" Margin="10"
-                 Text="{Binding Birthday}" 
-                 IsVisibleChanged="tbBirthday_IsVisibleChanged">
-            <TextBox.Style>
-                <Style TargetType="TextBox">
-                    <Style.Triggers>
-                        <!-- при клике textbox исчезает, показывая календарь -->
-                        <Trigger Property="IsFocused" Value="True">
-                            <Setter Property="Visibility" Value="Hidden"/>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBox.Style>
-        </TextBox>
-
-        <!-- Календарь (скрыт по умолчанию, появляется при клике) -->
-        <DatePicker x:Name="ClBirthday" Grid.Row="4" Grid.Column="1" Margin="10"
-                    Visibility="Hidden"
-                    SelectedDate="{Binding Birthday, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+        <DatePicker Grid.Row="4" Grid.Column="1" Margin="10"
+                    SelectedDate="{Binding Birthday, Mode=TwoWay}"/>
 
         <StackPanel Grid.Row="5" Grid.ColumnSpan="2"
-                    Orientation="Horizontal" HorizontalAlignment="Right">
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
             <Button Content="Сохранить" Height="25" Width="100" Margin="10"
                     Click="Save_Click"/>
             <Button Content="Отменить" Height="25" Width="100" Margin="10"

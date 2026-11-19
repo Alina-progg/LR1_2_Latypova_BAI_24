@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.IO; // добавлено для работы с файлами
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using Newtonsoft.Json; // добавлено для работы с json
+using System.Data.Entity;
 using ЛР1_2_Латыпова_БАИ_24.Helper;
 using ЛР1_2_Латыпова_БАИ_24.Model;
 using ЛР1_2_Латыпова_БАИ_24.View;
@@ -15,71 +13,61 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
 {
     public class PersonViewModel : INotifyPropertyChanged
     {
-        // добавлено: путь к json файлу
-        readonly string path = @"C:\Users\User\source\repos\ЛР1_2_Латыпова_БАИ_24\DataModels\PersonData.json";
-
-        // добавлено: поля для работы с json и ошибками
-        string _jsonPersons = String.Empty;
+        // поле для хранения текста ошибки
         public string Error { get; set; }
-        public string Message { get; set; } // добавлено для вывода сообщений
 
-        // Ссылка на RoleViewModel, чтобы передавать её в окно
+        // поле для хранения сообщения
+        public string Message { get; set; }
+
+        // ссылка на RoleViewModel
         public RoleViewModel RoleVM { get; set; }
 
-        // Конструктор принимает RoleViewModel (чтобы работал MainWindowViewModel)
+        // конструктор класса
         public PersonViewModel(RoleViewModel roleVM)
         {
             RoleVM = roleVM;
-
-            // изменено: убрано ручное добавление данных, теперь загрузка из файла
             ListPerson = LoadPerson();
-            ListPersonDpo = GetListPersonDpo();
         }
 
-        private PersonDpo selectedPersonDpo;
-        public PersonDpo SelectedPersonDpo
+        private Person selectedPerson;
+
+        // выбранный сотрудник
+        public Person SelectedPerson
         {
-            get { return selectedPersonDpo; }
+            get { return selectedPerson; }
             set
             {
-                selectedPersonDpo = value;
-                OnPropertyChanged("SelectedPersonDpo");
+                selectedPerson = value;
+                OnPropertyChanged("SelectedPerson");
                 EditPerson.CanExecute(true);
             }
         }
 
-        public ObservableCollection<PersonDpo> ListPersonDpo { get; set; } = new ObservableCollection<PersonDpo>();
-        public ObservableCollection<Person> ListPerson { get; set; } = new ObservableCollection<Person>();
+        // список сотрудников
+        public ObservableCollection<Person> ListPerson { get; set; }
+            = new ObservableCollection<Person>();
 
-        public ObservableCollection<PersonDpo> GetListPersonDpo()
-        {
-            if (ListPerson != null)
-            {
-                foreach (var person in ListPerson)
-                {
-                    PersonDpo p = new PersonDpo();
-                    p = p.CopyFromPerson(person);
-                    ListPersonDpo.Add(p);
-                }
-            }
-            return ListPersonDpo;
-        }
-
+        // получение максимального идентификатора
         public int MaxId()
         {
             int max = 0;
-            if (ListPerson != null)
+
+            foreach (var person in ListPerson)
             {
-                foreach (var r in this.ListPerson)
+                if (max < person.Id)
                 {
-                    if (max < r.Id) max = r.Id;
+                    max = person.Id;
                 }
             }
+
             return max;
         }
 
         #region AddPerson
+
         private RelayCommand addPerson;
+
+        // добавление сотрудника
         public RelayCommand AddPerson
         {
             get
@@ -91,41 +79,55 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                     {
                         Title = "Новый сотрудник"
                     };
+
                     int maxIdPerson = MaxId() + 1;
 
-                    // изменено: birthday теперь строка
-                    PersonDpo per = new PersonDpo { Id = maxIdPerson, Birthday = DateTime.Now.ToString("dd.MM.yyyy") };
+                    Person person = new Person
+                    {
+                        Id = maxIdPerson,
+                        Birthday = DateTime.Now
+                    };
 
-                    wnPerson.DataContext = per;
+                    wnPerson.DataContext = person;
 
                     if (wnPerson.ShowDialog() == true)
                     {
-                        // изменено: добавлена проверка на null для должности
-                        var r = (Role)wnPerson.CbRole.SelectedItem;
-                        if (r != null)
+                        using (CompanyEntities db = new CompanyEntities())
                         {
-                            per.RoleName = r.NameRole;
-                            // добавлено: форматирование даты в строку
-                            per.Birthday = DateTime.Parse(per.Birthday).ToString("dd.MM.yyyy");
+                            // проверка выбранной должности
+                            var role = db.Roles.Find(person.RoleId);
 
-                            ListPersonDpo.Add(per);
+                            if (role != null)
+                            {
+                                db.Persons.Add(person);
+                                db.SaveChanges();
 
-                            Person p = new Person();
-                            p = p.CopyFromPersonDPO(per);
-                            ListPerson.Add(p);
+                                // добавление сотрудника в список
+                                person.Role = RoleVM.ListRole
+                                    .FirstOrDefault(r => r.Id == person.RoleId);
 
-                            // добавлено: сохранение изменений в файл
-                            SaveChanges(ListPerson);
+                                ListPerson.Add(person);
+                                SelectedPerson = person;
+                            }
+                            else
+                            {
+                                Message = "Необходимо выбрать должность сотрудника.";
+                                MessageBox.Show(Message);
+                            }
                         }
                     }
                 },
                 (obj) => true));
             }
         }
+
         #endregion
 
         #region EditPerson
+
         private RelayCommand editPerson;
+
+        // редактирование сотрудника
         public RelayCommand EditPerson
         {
             get
@@ -135,49 +137,68 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                 {
                     WindowNewEmployee wnPerson = new WindowNewEmployee(RoleVM)
                     {
-                        Title = "Редактирование данных сотрудника",
+                        Title = "Редактирование данных сотрудника"
                     };
-                    PersonDpo personDpo = SelectedPersonDpo;
-                    PersonDpo tempPerson = new PersonDpo();
-                    tempPerson = personDpo.ShallowCopy();
+
+                    Person person = SelectedPerson;
+
+                    // создание копии сотрудника для редактирования
+                    Person tempPerson = new Person
+                    {
+                        Id = person.Id,
+                        RoleId = person.RoleId,
+                        FirstName = person.FirstName,
+                        LastName = person.LastName,
+                        Birthday = person.Birthday
+                    };
+
                     wnPerson.DataContext = tempPerson;
 
                     if (wnPerson.ShowDialog() == true)
                     {
-                        // изменено: добавлена проверка на null
-                        var r = (Role)wnPerson.CbRole.SelectedItem;
-                        if (r != null)
+                        using (CompanyEntities db = new CompanyEntities())
                         {
-                            personDpo.RoleName = r.NameRole;
-                            personDpo.FirstName = tempPerson.FirstName;
-                            personDpo.LastName = tempPerson.LastName;
-                            // изменено: форматирование даты
-                            personDpo.Birthday = DateTime.Parse(tempPerson.Birthday).ToString("dd.MM.yyyy");
+                            // поиск сотрудника в базе данных
+                            Person personInDb = db.Persons.Find(person.Id);
 
-                            // изменено: поиск сотрудника и обновление через метод
-                            var p = ListPerson.FirstOrDefault(x => x.Id == personDpo.Id);
-                            if (p != null)
+                            if (personInDb != null)
                             {
-                                p = p.CopyFromPersonDPO(personDpo);
-                            }
+                                // обновление данных сотрудника
+                                personInDb.RoleId = tempPerson.RoleId;
+                                personInDb.FirstName = tempPerson.FirstName;
+                                personInDb.LastName = tempPerson.LastName;
+                                personInDb.Birthday = tempPerson.Birthday;
 
-                            // добавлено: сохранение изменений в файл
-                            SaveChanges(ListPerson);
+                                db.SaveChanges();
+                            }
                         }
-                        else
-                        {
-                            // добавлено: сообщение если должность не выбрана
-                            Message = "Необходимо выбрать должность сотрудника.";
-                        }
+
+                        // обновление данных в списке
+                        person.RoleId = tempPerson.RoleId;
+                        person.FirstName = tempPerson.FirstName;
+                        person.LastName = tempPerson.LastName;
+                        person.Birthday = tempPerson.Birthday;
+                        person.Role = RoleVM.ListRole
+                            .FirstOrDefault(r => r.Id == person.RoleId);
+
+                        // обновление отображения списка
+                        int index = ListPerson.IndexOf(person);
+                        ListPerson.Remove(person);
+                        ListPerson.Insert(index, person);
+                        SelectedPerson = person;
                     }
                 },
-                (obj) => SelectedPersonDpo != null && ListPersonDpo.Count > 0));
+                (obj) => SelectedPerson != null && ListPerson.Count > 0));
             }
         }
+
         #endregion
 
         #region DeletePerson
+
         private RelayCommand deletePerson;
+
+        // удаление сотрудника
         public RelayCommand DeletePerson
         {
             get
@@ -185,73 +206,61 @@ namespace ЛР1_2_Латыпова_БАИ_24.ViewModel
                 return deletePerson ??
                 (deletePerson = new RelayCommand(obj =>
                 {
-                    PersonDpo person = SelectedPersonDpo;
-                    MessageBoxResult result = MessageBox.Show("Удалить данные по сотруднику: \n" + person.LastName + " " + person.FirstName,
-                        "Предупреждение", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
+                    Person person = SelectedPerson;
+
+                    MessageBoxResult result = MessageBox.Show(
+                        "Удалить данные по сотруднику: \n" +
+                        person.LastName + " " + person.FirstName,
+                        "Предупреждение",
+                        MessageBoxButton.OKCancel,
+                        MessageBoxImage.Warning);
+
                     if (result == MessageBoxResult.OK)
                     {
-                        ListPersonDpo.Remove(person);
-
-                        // изменено: поиск удаляемого сотрудника через firstordefault
-                        var per = ListPerson.FirstOrDefault(p => p.Id == person.Id);
-                        if (per != null)
+                        using (CompanyEntities db = new CompanyEntities())
                         {
-                            ListPerson.Remove(per);
-                            // добавлено: сохранение изменений в файл
-                            SaveChanges(ListPerson);
+                            // поиск сотрудника в базе данных
+                            Person personInDb = db.Persons.Find(person.Id);
+
+                            if (personInDb != null)
+                            {
+                                db.Persons.Remove(personInDb);
+                                db.SaveChanges();
+                            }
                         }
+
+                        ListPerson.Remove(person);
+                        SelectedPerson = null;
                     }
                 },
-                (obj) => SelectedPersonDpo != null && ListPersonDpo.Count > 0));
+                (obj) => SelectedPerson != null && ListPerson.Count > 0));
             }
         }
+
         #endregion
 
         #region Methods
-        // добавлено: метод загрузки из файла
+
+        // загрузка сотрудников из базы данных
         public ObservableCollection<Person> LoadPerson()
         {
-            try
+            using (CompanyEntities db = new CompanyEntities())
             {
-                if (File.Exists(path))
-                {
-                    _jsonPersons = File.ReadAllText(path);
-                    if (_jsonPersons != null)
-                    {
-                        return JsonConvert.DeserializeObject<ObservableCollection<Person>>(_jsonPersons);
-                    }
-                }
+                return new ObservableCollection<Person>(
+                    db.Persons.Include("Role").ToList());
             }
-            catch (Exception e)
-            {
-                Error = "Ошибка чтения json файла\n" + e.Message;
-            }
-            return new ObservableCollection<Person>();
         }
 
-        // добавлено: метод сохранения в файл
-        private void SaveChanges(ObservableCollection<Person> listPersons)
-        {
-            // добавлено: formatting.indented для красивого вывода
-            var jsonPerson = JsonConvert.SerializeObject(listPersons, Newtonsoft.Json.Formatting.Indented);
-            try
-            {
-                using (StreamWriter writer = File.CreateText(path))
-                {
-                    writer.Write(jsonPerson);
-                }
-            }
-            catch (IOException e)
-            {
-                Error = "Ошибка записи json файла\n" + e.Message;
-            }
-        }
         #endregion
 
         public event PropertyChangedEventHandler PropertyChanged;
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = "")
+
+        protected virtual void OnPropertyChanged(
+            [CallerMemberName] string propertyName = "")
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChanged?.Invoke(
+                this,
+                new PropertyChangedEventArgs(propertyName));
         }
     }
 }
