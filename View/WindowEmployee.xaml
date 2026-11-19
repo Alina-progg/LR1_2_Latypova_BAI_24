@@ -21,8 +21,8 @@
             <ListView.View>
                 <GridView>
                     <GridView.Columns>
-                        <GridViewColumn Header="Код" Width="50"
-                                        DisplayMemberBinding="{Binding Id}"/>
+                        <!--<GridViewColumn Header="Код" Width="50"
+                                        DisplayMemberBinding="{Binding Id}"/>-->
                         <GridViewColumn Header="Фамилия"
                                         DisplayMemberBinding="{Binding LastName}"/>
                         <GridViewColumn Header="Имя"

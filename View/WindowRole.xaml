@@ -22,8 +22,9 @@
             <ListView.View>
                 <GridView>
                     <GridView.Columns>
+                        <!-- удалили
                         <GridViewColumn Header="Код" Width="50"
-                                        DisplayMemberBinding="{Binding Id}"/>
+                DisplayMemberBinding="{Binding Id}"/>-->
                         <GridViewColumn Header="Наименование должности"
                                         DisplayMemberBinding="{Binding NameRole}"/>
                     </GridView.Columns>
